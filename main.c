@@ -78,9 +78,6 @@ bool input (Application *self);
 // Update the application state
 void update (Application *self);
 
-// Check if a keyboard key has been typed
-bool sfKeyboard_isKeyTyped (sfKeyCode key);
-
 /** === Implementation === */
 bool init_sfml (sfRenderWindow **_window) {
 
@@ -388,33 +385,6 @@ void render (Application *self) {
     // Render to the window
     sfRenderWindow_display (window);
 }
-
-typedef enum _KeyState
-{
-	KEY_STATE_RELEASED,
-	KEY_STATE_PRESSED,
-
-}	KeyState;
-
-bool sfKeyboard_isKeyTyped (sfKeyCode key) {
-	static KeyState states[sizeof(key)] = {[0 ... (sizeof(key)-1)] = KEY_STATE_RELEASED};
-	bool keyPressed = sfKeyboard_isKeyPressed (key);
-
-	if (keyPressed) {
-		// The key has been pressed but not released yet
-		states[key] = KEY_STATE_PRESSED;
-		return false;
-	}
-
-	// On release, trigger the event
-	if (!keyPressed && states[key] == KEY_STATE_PRESSED) {
-		states[key] = KEY_STATE_RELEASED;
-		return true;
-	}
-
-	return false;
-}
-
 
 bool input (Application *self) {
 
