@@ -5,7 +5,7 @@
 #include "BbQueue/BbQueue.h"
 
 // Update tick frequency
-#define UPDATE_TICK_FREQUENCY 0.03
+#define UPDATE_TICK_FREQUENCY 0.01
 
 // Size in pixels between each tick on X axis
 #define X_TILE_SIZE 150
@@ -109,7 +109,7 @@ bool init_sfml (sfRenderWindow **_window) {
         return false;
     }
 
-    sfRenderWindow_setVerticalSyncEnabled (window, true);
+    // sfRenderWindow_setVerticalSyncEnabled (window, true);
 
     *_window = window;
 
@@ -208,40 +208,48 @@ void update (Application *self) {
     if (averageBpVx.position.x >= graphics->axisSize.x) {
 
         // Offset all the previous vertices
-        sfVertexArray *avgBand = sfVertexArray_create();
-        sfVertexArray_setPrimitiveType(avgBand, sfPoints);
-        sfVertexArray *avgBandData = sfVertexArray_create();
+        void offset_vertices (
+            sfVertexArray **_band,
+            sfVertexArray **_bandData,
+            sfVertexArray *curB,
+            sfVertexArray *curBData
+        ) {
+            sfVertexArray *band = sfVertexArray_create();
+            sfVertexArray *bandData = sfVertexArray_create();
+            sfVertexArray_setPrimitiveType(band, sfLinesStrip);
 
-        for (size_t i = 1; i < avgSize; i++) {
-            sfVertex *v = sfVertexArray_getVertex(graphics->averageBandwith, i);
-            sfVertex *vData = sfVertexArray_getVertex(graphics->averageBandwithData, i);
-            if (i == 1) {
-                graphics->startAxisTime = vData->position.x;
+            for (size_t i = 1; i < avgSize; i++) {
+                sfVertex *v = sfVertexArray_getVertex(curB, i);
+                sfVertex *vData = sfVertexArray_getVertex(curBData, i);
+                if (i == 1) {
+                    graphics->startAxisTime = vData->position.x;
+                }
+                sfVertexArray_append(band, *v);
+                sfVertexArray_append(bandData, *vData);
             }
-            sfVertexArray_append(avgBand, *v);
-            sfVertexArray_append(avgBandData, *vData);
+
+            *_band = band;
+            *_bandData = bandData;
         }
 
-        sfVertexArray *curBand = sfVertexArray_create();
-        sfVertexArray *curBandData = sfVertexArray_create();
-        for (size_t i = 1; i < curSize; i++) {
-            sfVertex *v = sfVertexArray_getVertex(graphics->currentBandwith, i);
-            sfVertex *vData = sfVertexArray_getVertex(graphics->currentBandwithData, i);
-            if (i == 1) {
-                graphics->startAxisTime = vData->position.x;
-            }
-            sfVertexArray_append(curBand, *v);
-            sfVertexArray_append(curBandData, *vData);
-        }
+        sfVertexArray *avgBand = NULL;
+        sfVertexArray *avgBandData = NULL;
+        sfVertexArray *curBand = NULL;
+        sfVertexArray *curBandData = NULL;
+
+        offset_vertices(&avgBand, &avgBandData, graphics->averageBandwith, graphics->averageBandwithData);
+        offset_vertices(&curBand, &curBandData, graphics->currentBandwith, graphics->currentBandwithData);
 
         sfVertexArray_destroy(graphics->averageBandwith);
         sfVertexArray_destroy(graphics->averageBandwithData);
         sfVertexArray_destroy(graphics->currentBandwith);
         sfVertexArray_destroy(graphics->currentBandwithData);
+
         graphics->averageBandwith = avgBand;
         graphics->averageBandwithData = avgBandData;
         graphics->currentBandwith = curBand;
         graphics->currentBandwithData = curBandData;
+
         relocate_vertices(limitSpeed);
     }
 
@@ -446,12 +454,12 @@ bool init_graphics (Graphics *self, char *url) {
     // Average bandwith vertex array
     self->averageBandwith = sfVertexArray_create ();
     self->averageBandwithData = sfVertexArray_create ();
-    sfVertexArray_setPrimitiveType(self->averageBandwith, sfPoints);
+    sfVertexArray_setPrimitiveType(self->averageBandwith, sfLinesStrip);
 
     // Current bandwith vertex array
     self->currentBandwith = sfVertexArray_create ();
     self->currentBandwithData = sfVertexArray_create ();
-    sfVertexArray_setPrimitiveType(self->currentBandwith, sfPoints);
+    sfVertexArray_setPrimitiveType(self->currentBandwith, sfLinesStrip);
 
     // Bandwith text
     self->currentBandwithText = sfText_create ();
@@ -568,6 +576,8 @@ int main (int argc, char **argv)
     // === Process parameters ===
     char *url = (argc >= 2) ? argv[1] : "test-debit.free.fr/image.iso";
     char *filename = (argc >= 3) ? argv[2] : NULL;
+
+    info("Usage : BandwithPlotter <url> <output filename>", argv[0]);
 
     // === Initialize and run the application ===
     Application appInfo;
