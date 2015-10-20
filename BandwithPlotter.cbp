@@ -13,6 +13,8 @@
 				<Option compiler="mingw64" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-DSFML_STATIC" />
+					<Add directory="C:/Users/Spl3en/Desktop/C/BandwithPlotter/" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -22,15 +24,30 @@
 				<Option compiler="mingw64" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-DSFML_STATIC" />
 				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-DSFML_STATIC" />
+			<Add directory="D:/Logiciels/MSYS/mingw64/include" />
 		</Compiler>
+		<Linker>
+			<Add library="csfml-window" />
+			<Add library="csfml-graphics" />
+			<Add library="csfml-system" />
+			<Add library="curl" />
+			<Add directory="D:/Logiciels/MSYS/mingw64/lib" />
+		</Linker>
+		<Unit filename="../BbQueue/BbQueue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../BbQueue/BbQueue.h" />
+		<Unit filename="../dbg/dbg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../dbg/dbg.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>

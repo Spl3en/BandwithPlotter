@@ -129,8 +129,8 @@ bool init_curl (CURL **_curl, char *url) {
     return true;
 }
 
-void get_vertex_x (sfVertex *v, double time) {
-    v->position.x = time * X_TILE_SIZE;
+void get_vertex_x (sfVertex *v, double time, double start) {
+    v->position.x = (time - start) * X_TILE_SIZE;
 }
 
 void get_vertex_y (sfVertex *v, double axisSizeY, double speed, double limitSpeed) {
@@ -138,8 +138,8 @@ void get_vertex_y (sfVertex *v, double axisSizeY, double speed, double limitSpee
 }
 
 // Function helper for computing the new vertex position
-void get_vertex_pos (sfVertex *v, sfVector2f axisSize, double time, double speed, double limitSpeed) {
-    get_vertex_x(v, time);
+void get_vertex_pos (sfVertex *v, sfVector2f axisSize, double startAxisTime, double time, double speed, double limitSpeed) {
+    get_vertex_x(v, time, startAxisTime);
     get_vertex_y(v, axisSize.y, speed, limitSpeed);
 
     // Check if we overflow the X axis
@@ -179,13 +179,13 @@ void update (Application *self) {
         for (size_t i = 0; i < avgSize; i++) {
             sfVertex *v = sfVertexArray_getVertex(graphics->averageBandwith, i);
             sfVertex *vData = sfVertexArray_getVertex(graphics->averageBandwithData, i);
-            get_vertex_pos(v, graphics->axisSize, vData->position.x, vData->position.y, limitSpeed);
+            get_vertex_pos(v, graphics->axisSize, graphics->startAxisTime, vData->position.x, vData->position.y, limitSpeed);
             add_padding(v);
         }
         for (size_t i = 0; i < curSize; i++) {
             sfVertex *v = sfVertexArray_getVertex(graphics->currentBandwith, i);
             sfVertex *vData = sfVertexArray_getVertex(graphics->currentBandwithData, i);
-            get_vertex_pos(v, graphics->axisSize, vData->position.x, vData->position.y, limitSpeed);
+            get_vertex_pos(v, graphics->axisSize, graphics->startAxisTime, vData->position.x, vData->position.y, limitSpeed);
             add_padding(v);
         }
     }
@@ -202,34 +202,47 @@ void update (Application *self) {
 
     // Get current vertices position
     sfVertex averageBpVx, currentBpVx;
-    get_vertex_pos (&averageBpVx, graphics->axisSize, data->time, data->speed, limitSpeed);
-    get_vertex_pos (&currentBpVx, graphics->axisSize, data->time, data->lastSecondSpeed, limitSpeed);
+    get_vertex_pos (&averageBpVx, graphics->axisSize, graphics->startAxisTime, data->time, data->speed, limitSpeed);
+    get_vertex_pos (&currentBpVx, graphics->axisSize, graphics->startAxisTime, data->time, data->lastSecondSpeed, limitSpeed);
 
     if (averageBpVx.position.x >= graphics->axisSize.x) {
 
         // Offset all the previous vertices
-        for (size_t i = 0; i < avgSize - 1; i++) {
+        sfVertexArray *avgBand = sfVertexArray_create();
+        sfVertexArray_setPrimitiveType(avgBand, sfPoints);
+        sfVertexArray *avgBandData = sfVertexArray_create();
+
+        for (size_t i = 1; i < avgSize; i++) {
             sfVertex *v = sfVertexArray_getVertex(graphics->averageBandwith, i);
             sfVertex *vData = sfVertexArray_getVertex(graphics->averageBandwithData, i);
-            sfVertex *vNext = sfVertexArray_getVertex(graphics->averageBandwith, i+1);
-            sfVertex *vNextData = sfVertexArray_getVertex(graphics->averageBandwithData, i+1);
-            v->position.y = vNext->position.y;
-            vData->position.y = vNextData->position.y;
+            if (i == 1) {
+                graphics->startAxisTime = vData->position.x;
+            }
+            sfVertexArray_append(avgBand, *v);
+            sfVertexArray_append(avgBandData, *vData);
         }
 
-        for (size_t i = 0; i < curSize - 1; i++) {
+        sfVertexArray *curBand = sfVertexArray_create();
+        sfVertexArray *curBandData = sfVertexArray_create();
+        for (size_t i = 1; i < curSize; i++) {
             sfVertex *v = sfVertexArray_getVertex(graphics->currentBandwith, i);
             sfVertex *vData = sfVertexArray_getVertex(graphics->currentBandwithData, i);
-            sfVertex *vNext = sfVertexArray_getVertex(graphics->currentBandwith, i+1);
-            sfVertex *vNextData = sfVertexArray_getVertex(graphics->currentBandwithData, i+1);
-            v->position.y = vNext->position.y;
-            vData->position.y = vNextData->position.y;
+            if (i == 1) {
+                graphics->startAxisTime = vData->position.x;
+            }
+            sfVertexArray_append(curBand, *v);
+            sfVertexArray_append(curBandData, *vData);
         }
 
-        sfVertexArray_resize(graphics->averageBandwith, avgSize - 1);
-        sfVertexArray_resize(graphics->averageBandwithData, avgSize - 1);
-        sfVertexArray_resize(graphics->currentBandwith, curSize - 1);
-        sfVertexArray_resize(graphics->currentBandwithData, curSize - 1);
+        sfVertexArray_destroy(graphics->averageBandwith);
+        sfVertexArray_destroy(graphics->averageBandwithData);
+        sfVertexArray_destroy(graphics->currentBandwith);
+        sfVertexArray_destroy(graphics->currentBandwithData);
+        graphics->averageBandwith = avgBand;
+        graphics->averageBandwithData = avgBandData;
+        graphics->currentBandwith = curBand;
+        graphics->currentBandwithData = curBandData;
+        relocate_vertices(limitSpeed);
     }
 
     // Apply padding
