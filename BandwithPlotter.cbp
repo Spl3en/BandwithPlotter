@@ -32,6 +32,7 @@
 			<Add option="-Wall" />
 			<Add option="-DSFML_STATIC" />
 			<Add directory="D:/Logiciels/MSYS/mingw64/include" />
+			<Add directory="../" />
 		</Compiler>
 		<Linker>
 			<Add library="csfml-window" />
