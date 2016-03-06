@@ -25,6 +25,7 @@ typedef struct {
     sfVertexArray *averageBandwithData;
     sfVertexArray *currentBandwith;
     sfVertexArray *currentBandwithData;
+    sfText *avgBandwidthText;
     sfText *currentBandwithText;
 
     // Download information
@@ -270,9 +271,16 @@ void update (Application *self) {
     // Update text string and position
     char string[100];
     sprintf(string, "%.0f KB/s", data->speed);
+    sfText_setPosition(graphics->avgBandwidthText, (sfVector2f){
+        .x = averageBpVx.position.x + 15,
+        .y = averageBpVx.position.y - 15
+    });
+    sfText_setString(graphics->avgBandwidthText, string);
+
+    sprintf(string, "%.0f KB/s", data->lastSecondSpeed);
     sfText_setPosition(graphics->currentBandwithText, (sfVector2f){
-        .x = averageBpVx.position.x + 20,
-        .y = averageBpVx.position.y - 50
+        .x = currentBpVx.position.x + 15,
+        .y = currentBpVx.position.y - 15
     });
     sfText_setString(graphics->currentBandwithText, string);
 
@@ -372,6 +380,7 @@ void render (Application *self) {
     sfRenderWindow_drawRectangleShape (window, graphics->axis[1], NULL);
 
     // Draw bandwith text and curves
+    sfRenderWindow_drawText (window, graphics->avgBandwidthText, NULL);
     sfRenderWindow_drawText (window, graphics->currentBandwithText, NULL);
     sfRenderWindow_drawVertexArray (window, graphics->averageBandwith, NULL);
     sfRenderWindow_drawVertexArray (window, graphics->currentBandwith, NULL);
@@ -398,6 +407,8 @@ bool input (Application *self) {
 }
 
 bool init_graphics (Graphics *self, char *url) {
+
+    sfFont *font;
 
 	sfVideoMode desktop = sfVideoMode_getDesktopMode ();
 	self->width = desktop.width * 0.666;
@@ -431,10 +442,20 @@ bool init_graphics (Graphics *self, char *url) {
     self->currentBandwithData = sfVertexArray_create ();
     sfVertexArray_setPrimitiveType(self->currentBandwith, sfLinesStrip);
 
+    // Font
+    if (!(font = sfFont_createFromFile("visitor2.ttf"))) {
+        // Find it on Windows Fonts folder
+        if (!(font = sfFont_createFromFile("C:/Windows/Fonts/visitor2.ttf"))) {
+            error("Cannot find font.");
+        }
+    }
+
     // Bandwith text
+    self->avgBandwidthText = sfText_create ();
+    sfText_setCharacterSize(self->avgBandwidthText, 30);
+    sfText_setFont(self->avgBandwidthText, font);
     self->currentBandwithText = sfText_create ();
     sfText_setCharacterSize(self->currentBandwithText, 30);
-    sfFont *font = sfFont_createFromFile("visitor2.ttf");
     sfText_setFont(self->currentBandwithText, font);
 
     // Total time text
