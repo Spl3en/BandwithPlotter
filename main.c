@@ -33,6 +33,10 @@ typedef struct {
     sfText *sizeText;
     sfText *urlText;
     sfText *maxSpeedText;
+    sfText *legendAvg;
+    sfText *legendCur;
+    sfVertexArray *legendAvgColor;
+    sfVertexArray *legendCurColor;
 
 }   Graphics;
 
@@ -391,6 +395,12 @@ void render (Application *self) {
     sfRenderWindow_drawText (window, graphics->urlText, NULL);
     sfRenderWindow_drawText (window, graphics->maxSpeedText, NULL);
 
+    // Draw legend
+    sfRenderWindow_drawVertexArray (window, graphics->legendAvgColor, NULL);
+    sfRenderWindow_drawVertexArray (window, graphics->legendCurColor, NULL);
+    sfRenderWindow_drawText (window, graphics->legendAvg, NULL);
+    sfRenderWindow_drawText (window, graphics->legendCur, NULL);
+
     // Render to the window
     sfRenderWindow_display (window);
 }
@@ -485,6 +495,36 @@ bool init_graphics (Graphics *self, char *url) {
     sfText_setFont(self->maxSpeedText, font);
     sfText_setPosition(self->maxSpeedText, (sfVector2f){.x = 10, .y = self->padding.y - 30});
     sfText_setString(self->maxSpeedText, url);
+
+    // Legend
+    self->legendAvg = sfText_create ();
+    sfText_setCharacterSize(self->legendAvg, 20);
+    sfText_setFont(self->legendAvg, font);
+    sfText_setPosition (self->legendAvg, (sfVector2f){.x = 50, .y = self->height - 30});
+    sfText_setString(self->legendAvg, "Average speed");
+
+    self->legendCur = sfText_create ();
+    sfText_setCharacterSize(self->legendCur, 20);
+    sfText_setFont(self->legendCur, font);
+    sfText_setPosition (self->legendCur, (sfVector2f){.x = 50, .y = self->height - 50});
+    sfText_setString(self->legendCur, "Current speed");
+
+    self->legendAvgColor = sfVertexArray_create ();
+    self->legendCurColor = sfVertexArray_create ();
+    sfVertexArray_setPrimitiveType(self->legendAvgColor, sfLinesStrip);
+    sfVertexArray_setPrimitiveType(self->legendCurColor, sfLinesStrip);
+
+    sfVertex avgColor = {.position = {.x = 10, .y = self->height - 15}, .color = sfRed};
+    sfVertex curColor = {.position = {.x = 10, .y = self->height - 35}, .color = sfYellow};
+    sfVertex avgColor2 = avgColor;
+    avgColor2.position.x += 30;
+    sfVertex curColor2 = curColor;
+    curColor2.position.x += 30;
+
+    sfVertexArray_append (self->legendAvgColor, avgColor);
+    sfVertexArray_append (self->legendAvgColor, avgColor2);
+    sfVertexArray_append (self->legendCurColor, curColor);
+    sfVertexArray_append (self->legendCurColor, curColor2);
 
     return true;
 }
